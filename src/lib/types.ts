@@ -1,11 +1,15 @@
-export type Role = "boss" | "teacher";
-
-/** A class role defined by the boss (e.g. Maestra, Helper) with its hourly rate. */
+/** A class role (e.g. Maestra, Helper) with its hourly rate. */
 export interface RoleDef {
   id: string;
   name: string;
-  /** null = not defined yet by the boss */
+  /** null = not defined yet */
   rate: number | null;
+}
+
+export interface Pricing {
+  roles: RoleDef[];
+  /** Retention % subtracted from the role rate */
+  retention: number;
 }
 
 export interface ClassRow {
@@ -27,9 +31,7 @@ export interface ClassRow {
   amount: number;
   note: string;
   status: "pending" | "paid";
-  request: { by: Role; name: string; at: string } | null;
   paidAt: string | null;
-  comments: { id: string; name: string; role: Role; text: string; at: string; mine: boolean }[];
 }
 
 export interface ChartPoint {
@@ -46,15 +48,17 @@ export interface FamilySuggestion {
   end: string;
 }
 
-export interface SheetContext {
-  /** Who is looking at the sheet. */
-  role: Role;
-  teacherId: string;
-  teacherName: string;
-  bossName: string;
-  /** Name of the other party (boss for teachers, teacher for bosses). */
-  otherName: string;
-  month: string;
+export type StatusFilter = "all" | "pending" | "paid";
+
+/** What to put in a PDF: either picked rows, or a filter. */
+export type ExportFilter =
+  | { ids: string[] }
+  | { from: string; to: string; status: StatusFilter; family: string };
+
+export interface ExportData {
+  /** Human-readable description of what was exported */
+  scope: { title: string; details: string[] };
+  rows: ClassRow[];
 }
 
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };

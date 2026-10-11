@@ -4,10 +4,8 @@ import { AuthShell } from "@/components/auth-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSession } from "@/lib/session";
 
-export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { invite } = await searchParams;
-  const token = typeof invite === "string" ? invite : undefined;
-  if (await getSession()) redirect(token ? `/invite/${token}` : "/");
+export default async function LoginPage() {
+  if (await getSession()) redirect("/");
 
   return (
     <AuthShell>
@@ -17,7 +15,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <CardDescription>Entra con tu correo y contraseña.</CardDescription>
         </CardHeader>
         <CardContent>
-          <AuthForm mode="login" inviteToken={token} />
+          <AuthForm mode="login" />
         </CardContent>
       </Card>
     </AuthShell>

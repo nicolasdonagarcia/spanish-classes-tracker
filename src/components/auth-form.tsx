@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { acceptInvite } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,12 +18,11 @@ const ERRORS: Record<string, string> = {
   PASSWORD_TOO_LONG: "La contraseña es demasiado larga.",
 };
 
-export function AuthForm({ mode, inviteToken }: { mode: "login" | "signup"; inviteToken?: string }) {
+export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isSignup = mode === "signup";
-  const q = inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : "";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,11 +47,6 @@ export function AuthForm({ mode, inviteToken }: { mode: "login" | "signup"; invi
       return;
     }
 
-    if (inviteToken) {
-      const res = await acceptInvite(inviteToken);
-      if (!res.ok) toast.error(res.error);
-      else toast.success("¡Bienvenida/o al equipo!");
-    }
     router.replace("/");
     router.refresh();
   }
@@ -104,14 +96,14 @@ export function AuthForm({ mode, inviteToken }: { mode: "login" | "signup"; invi
         {isSignup ? (
           <>
             ¿Ya tienes cuenta?{" "}
-            <Link href={`/login${q}`} className="font-medium text-foreground underline underline-offset-4">
+            <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
               Inicia sesión
             </Link>
           </>
         ) : (
           <>
             ¿No tienes cuenta?{" "}
-            <Link href={`/signup${q}`} className="font-medium text-foreground underline underline-offset-4">
+            <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
               Créala aquí
             </Link>
           </>

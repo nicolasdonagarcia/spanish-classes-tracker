@@ -1,37 +1,32 @@
 # Registro de clases
 
-A small web app for tracking paid Spanish classes. A teacher logs every class (date, family or place, schedule, hourly rate), the hours and totals calculate themselves, and the boss sees the same sheet. A class only becomes **PAGADO** once **both** sides agree.
+A small web app for logging paid Spanish classes. You record each class (family or place, role, date, schedule), the hours and amount calculate themselves, you mark classes as paid, and you can export a PDF report.
 
-The interface is in Spanish.
+The interface is in Spanish. Each account is private: you only see your own classes.
 
 ## What it does
 
-**Teacher (profesor/a)**
-- Signs up from the WhatsApp invite link the boss sends.
-- Sees **Mis clases**, one month at a time, with a 12-month chart (paid vs. pending).
-- **Agregar clase**: family/place, **class role** (e.g. Maestra, Helper), date, from–to time. The hourly rate comes from the role, minus her retention if she has one, and hours and total calculate themselves. Families she has used before show up as one-tap suggestions that fill in the last role and schedule.
-- Row menu: **Editar**, **Repetir la próxima semana** (copies the class to the same day next week), **Eliminar**. Paid rows are locked.
+- **Mis clases**: one month at a time, with a 12-month chart (paid vs. pending), the month's totals (hours, total, paid, pending) and a table of classes (cards on a phone).
+- **Ajustes** (top right): your class roles and their hourly rates, plus an optional **Retención (%)** taken off every rate. New accounts start with **Maestra** and **Helper** with blank rates, and a yellow banner asks you to fill them in. Example: Maestra $70/h with 20% retention → classes are logged at $56/h.
+- **Agregar clase**: family or place, role, date, and from–to time. Hours, rate (after retention) and total calculate themselves. Families you've used before show up as one-tap suggestions that fill in the last role and times.
+- **Marking as paid**:
+  - **Marcar pagado** on a single class.
+  - **Marcar mes como pagado** for every pending class that month.
+  - Tick several classes and use the bar at the bottom.
+  - A paid class is locked. Use **⋯ → Marcar como pendiente** to undo, then you can edit it again.
+- **Other row actions** (**⋯**): **Editar**, **Repetir la próxima semana** (copies the class to the same day next week), **Eliminar**.
+- **Exportar PDF**, two ways:
+  - **By filters**: the **Exportar PDF** button lets you pick a period (this month, last month, the year, everything, or custom dates), a status (all / pending / paid) and a family or place. It shows how many classes and how much money before you download.
+  - **By selection**: tick classes in the table → **PDF** in the bottom bar.
+  - The PDF (US Letter) has the period and filters (no name or email), totals (classes, hours, total, paid, pending), and the class table with role, rate (showing the retention) and status. It's grouped by month with subtotals when it covers several months, and has page numbers.
 
-**Boss (jefe/a)**
-- Sidebar listing each teacher with how much is pending, plus a badge when payments are waiting for the boss to confirm.
-- Clicking a teacher opens the same monthly sheet and chart (read-only).
-- **Roles y tarifas** (sidebar): the list of class roles and their hourly rates. New teams start with **Maestra** and **Helper**, with rates left blank for the boss to fill in. A role without a rate can't be picked until it has one.
-- **⋯ next to a teacher → Configuración**: per-teacher settings. For now that's **Retención (%)**, which is subtracted from the role rate. Example: 20% retention, Maestra $70/h → the class is logged at $56/h.
-- **Invitar profesor/a** creates a single-use link (valid 14 days) and opens WhatsApp with a ready-to-send message.
-
-**Payment confirmation (both need to agree)**
-1. Either side clicks **Marcar pagado** on a row, or **Marcar mes como pagado** for the whole month.
-2. The row changes to *Por confirmar*. The other side gets a yellow banner and a **Confirmar** button (per row, or **Confirmar N pagos** for the month).
-3. Once confirmed, the row is **PAGADO** and locked. The other side can also answer **No** (it wasn't paid), and the requester can **Deshacer**. If the teacher edits a row after asking for confirmation, the request is cancelled so nobody confirms an amount that changed.
-
-Each row also has a small comment thread, so either person can ask something like "were these 1.5 h?".
-
-**How rates are saved.** Each class saves its role, the role rate and the retention at the moment it's created, so changing a rate or a retention later doesn't rewrite classes already logged. If the teacher edits a pending class, it's recalculated with the current rate and retention. The server always does this calculation, so the teacher can't set her own rate.
+**How rates are saved.** Each class keeps the role, rate and retention it was saved with. Changing them in Ajustes affects new classes (and pending classes you edit), not ones already logged. The server always does the calculation.
 
 ## Stack
 
 - Next.js 16 (App Router, Server Actions), deployable on Vercel
 - shadcn/ui (Radix + Tailwind CSS v4), Recharts for the chart
+- jsPDF + jspdf-autotable for the PDF (built in the browser, so nothing heavy runs on the server)
 - MongoDB (official `mongodb` driver)
 - Better Auth: email + password, no email verification
 
@@ -79,13 +74,9 @@ Open http://localhost:3000. To generate a secret: `openssl rand -base64 32`
 
 ## 4. First use
 
-1. The **boss** opens the site, clicks **Créala aquí**, creates an account, then creates the team (**Crear mi equipo**).
-2. The boss sets the hourly rate for each role (**Definir tarifas**).
-3. The boss clicks **Invitar profesor/a** → **Crear enlace** → **Enviar por WhatsApp**.
-4. The **teacher** opens the link, creates her account, and lands on her sheet.
-5. Optional: if a teacher has a retention, the boss sets it with **⋯ → Configuración** next to her name.
-
-If the teacher already has an account, she opens the link and taps **Inicia sesión**. Each account belongs to one team.
+1. Open the site → **Créala aquí** → name, email and password.
+2. Tap **Definir tarifas** (or **Ajustes**) and fill in the hourly rate for each role, plus the retention if there is one.
+3. **Agregar clase** and you're going.
 
 ## Forgot a password?
 
@@ -110,16 +101,19 @@ This uses `MONGODB_URI` from `.env` or `.env.local`. It also signs that person o
 ## Project map
 
 ```
-src/app/actions.ts                 Server actions: classes, payments, invites, comments
-src/app/(app)/layout.tsx           Boss = sidebar layout · Teacher = simple header
-src/app/(app)/t/[teacherId]/       The monthly sheet (shared by boss and teacher)
-src/app/invite/[token]/            Invite landing + sign-up
-src/components/sheet/              Table, add/edit dialog, chart, summary, month navigation
-src/components/settings/           Roles & rates dialog, per-teacher settings (retention)
+src/app/(app)/page.tsx             Mis clases: chart, month totals, class table
+src/app/(app)/layout.tsx           Header (Ajustes, account menu)
+src/app/actions.ts                 Server actions: settings, classes, paid/pending, export data
+src/components/sheet/              Table + selection bar, add/edit dialog, chart, summary, month navigation
+src/components/settings/           Ajustes dialog (roles, rates, retention) + "define your rates" banner
+src/components/export/             Export dialog (filters + live count)
+src/lib/pdf-report.ts              PDF layout (jsPDF + autotable)
 src/lib/roles.ts                   Default roles + rate-after-retention math
 src/lib/db.ts                      MongoDB client + collection types
 src/lib/auth.ts                    Better Auth config
 scripts/reset-password.mjs         Admin password reset
 ```
 
-Data lives in four collections (`teams` (incl. roles and rates), `members` (incl. retention), `invites`, `classes`) plus Better Auth's own (`user`, `account`, `session`, `verification`).
+Data lives in two collections, `profiles` (roles, rates and retention per user) and `classes`, plus Better Auth's own (`user`, `account`, `session`, `verification`).
+
+**Upgrading from the earlier team version:** your classes are kept automatically. The first time the app starts, it moves their owner over to the new field. The old `teams`, `members` and `invites` collections aren't used anymore and can be deleted in Atlas whenever you like.

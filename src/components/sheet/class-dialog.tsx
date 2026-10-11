@@ -140,9 +140,7 @@ function ClassForm({
       <DialogHeader>
         <DialogTitle>{row ? "Editar clase" : "Agregar clase"}</DialogTitle>
         <DialogDescription>
-          {row?.request
-            ? "Al guardar, se cancelará la solicitud de pago pendiente."
-            : "Las horas y el total se calculan solos."}
+          Las horas y el total se calculan solos.
         </DialogDescription>
       </DialogHeader>
 
@@ -206,7 +204,8 @@ function ClassForm({
         </div>
         {noRates && (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            Tu jefe/a todavía no definió las tarifas de los roles. Avísale para que puedas registrar clases.
+            Todavía no definiste tus tarifas. Ciérralo y toca <span className="font-medium">Ajustes</span> para
+            definirlas.
           </p>
         )}
       </div>

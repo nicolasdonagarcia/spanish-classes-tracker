@@ -1,16 +1,16 @@
 import { round2 } from "@/lib/format";
 import type { RoleDef } from "@/lib/types";
 
-/** Roles every new team starts with. The boss sets the rates. */
+/** Roles every new account starts with. She sets the rates in Ajustes. */
 export const DEFAULT_ROLES: RoleDef[] = [
   { id: "maestra", name: "Maestra", rate: null },
   { id: "helper", name: "Helper", rate: null },
 ];
 
-export const teamRoles = (roles?: RoleDef[] | null): RoleDef[] =>
+export const withDefaultRoles = (roles?: RoleDef[] | null): RoleDef[] =>
   roles && roles.length ? roles : DEFAULT_ROLES;
 
-/** Hourly rate after subtracting the teacher's retention %. */
+/** Hourly rate after subtracting the retention %. */
 export const effectiveRate = (base: number, retention: number) =>
   round2(base * (1 - (retention || 0) / 100));
 

@@ -56,6 +56,17 @@ export const monthShort = (month: string) =>
 export const dateLabel = (date: string) =>
   capitalize(format(parseDay(date), "EEE d MMM", { locale: es }).replace(/\./g, ""));
 
+/** "2026-10-02" → "2 oct 2026" */
+export const dateLong = (date: string) =>
+  format(parseDay(date), "d MMM yyyy", { locale: es }).replace(/\./g, "");
+
+/** "2026-10" → { from: "2026-10-01", to: "2026-10-31" } */
+export function monthBounds(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  const last = new Date(y, m, 0).getDate();
+  return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, "0")}` };
+}
+
 /** "2026-10-02" → "viernes" */
 export const weekdayLabel = (date: string) => format(parseDay(date), "EEEE", { locale: es });
 

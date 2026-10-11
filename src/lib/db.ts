@@ -1,55 +1,22 @@
 import "server-only";
-import { MongoClient, type Collection, type ObjectId } from "mongodb";
+import { MongoClient, type ObjectId } from "mongodb";
 import { attachDatabasePool } from "@vercel/functions";
+import type { RoleDef } from "@/lib/types";
 
-import type { Role, RoleDef } from "@/lib/types";
-
-export type { Role, RoleDef };
-
-export interface TeamDoc {
-  _id: ObjectId;
-  name: string;
-  ownerId: string;
-  /** Class roles + hourly rates (missing on old teams → defaults). */
-  roles?: RoleDef[];
+/** Per-user settings: class roles with hourly rates and her retention %. */
+export interface ProfileDoc {
+  /** Better Auth user id */
+  _id: string;
+  roles: RoleDef[];
+  retention: number;
   createdAt: Date;
-}
-
-export interface MemberDoc {
-  _id: ObjectId;
-  teamId: ObjectId;
-  userId: string;
-  role: Role;
-  /** Teacher retention % (subtracted from the role rate). */
-  retention?: number;
-  createdAt: Date;
-}
-
-export interface InviteDoc {
-  _id: ObjectId;
-  token: string;
-  teamId: ObjectId;
-  createdBy: string;
-  name?: string;
-  createdAt: Date;
-  expiresAt: Date;
-  usedBy?: string;
-  usedAt?: Date;
-}
-
-export interface CommentDoc {
-  id: string;
-  userId: string;
-  name: string;
-  role: Role;
-  text: string;
-  at: Date;
+  updatedAt: Date;
 }
 
 export interface ClassDoc {
   _id: ObjectId;
-  teamId: ObjectId;
-  teacherId: string;
+  /** Owner (Better Auth user id) */
+  userId: string;
   /** YYYY-MM-DD */
   date: string;
   /** YYYY-MM */
@@ -60,30 +27,21 @@ export interface ClassDoc {
   end: string;
   hours: number;
   family: string;
-  roleId?: string;
+  roleId?: string | null;
   /** Role name snapshot */
-  role?: string;
+  role?: string | null;
   /** Role rate before retention (snapshot) */
-  baseRate?: number;
+  baseRate?: number | null;
   /** Retention % applied (snapshot) */
-  retention?: number;
+  retention?: number | null;
   /** Effective hourly rate after retention */
   rate: number;
   amount: number;
   note?: string;
   status: "pending" | "paid";
-  /** Someone asked to mark it as paid; the other party must confirm. */
-  request: { by: Role; userId: string; name: string; at: Date } | null;
-  paidAt?: Date;
-  comments: CommentDoc[];
+  paidAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface UserDoc {
-  _id: ObjectId;
-  name: string;
-  email: string;
 }
 
 const uri = process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017";
@@ -99,25 +57,23 @@ if (process.env.VERCEL) attachDatabasePool(client);
 
 export const db = client.db(process.env.MONGODB_DB || "registro-clases");
 
-export const teams = db.collection<TeamDoc>("teams");
-export const members = db.collection<MemberDoc>("members");
-export const invites = db.collection<InviteDoc>("invites");
+export const profiles = db.collection<ProfileDoc>("profiles");
 export const classes = db.collection<ClassDoc>("classes");
-/** Managed by Better Auth — read-only for us. */
-export const users = db.collection<UserDoc>("user") as Collection<UserDoc>;
 
-let indexesReady: Promise<unknown> | null = null;
+let ready: Promise<unknown> | null = null;
 
 /** Creates indexes once per server instance (idempotent). */
 export function ensureIndexes() {
-  indexesReady ??= Promise.all([
-    members.createIndex({ userId: 1 }, { unique: true }),
-    members.createIndex({ teamId: 1 }),
-    invites.createIndex({ token: 1 }, { unique: true }),
-    classes.createIndex({ teamId: 1, teacherId: 1, date: 1 }),
+  ready ??= Promise.all([
+    classes.createIndex({ userId: 1, date: 1 }),
+    // Classes saved by an earlier version used `teacherId` as the owner.
+    classes.updateMany(
+      { userId: { $exists: false }, teacherId: { $exists: true } } as never,
+      [{ $set: { userId: "$teacherId" } }]
+    ),
   ]).catch((err) => {
-    indexesReady = null;
-    console.error("Could not create indexes", err);
+    ready = null;
+    console.error("Could not prepare the database", err);
   });
-  return indexesReady;
+  return ready;
 }

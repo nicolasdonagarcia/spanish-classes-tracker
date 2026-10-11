@@ -105,6 +105,7 @@ export function EarningsChart({ data, selected }: { data: ChartPoint[]; selected
               height={34}
             />
             <YAxis
+              hide={empty}
               width={44}
               tickLine={false}
               axisLine={false}
